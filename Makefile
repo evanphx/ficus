@@ -25,6 +25,9 @@ clean:
 	-rm ficus
 	-rm src/*.o
 
+test:
+	for i in test/test_*.sh; do echo $$i; sh $$i; done
+
 distclean: clean
 	-rm vendor/*.a
 
@@ -32,6 +35,6 @@ dep:
 	: > depend
 	for i in $(SRC); do $(CC) $(CXXFLAGS) -MM -MT $${i%.cpp}.o $$i >> depend; done
 
-.PHONY: clean distclean dep
+.PHONY: clean distclean dep test
 
 -include depend

@@ -1,4 +1,8 @@
 #include <iostream>
+#include <sstream>
+
+#include <string.h>
+#include <stdlib.h>
 
 struct Token {
   enum Type {
@@ -10,29 +14,68 @@ struct Token {
     int i;
   } data;
 
+  Token(const Token& o) {
+    type = o.type;
+    data.i = o.data.i;
+
+    if(o.type == eAtom) {
+      data.s = strdup(data.s);
+    }
+  }
+
+  Token(Type t)
+    : type(t)
+  {}
+
+  Token(int v)
+    : type(eInt)
+  {
+    data.i = v;
+  }
+
+  Token(const char* v)
+    : type(eAtom)
+  {
+    data.s = strdup(v);
+  }
+
+  ~Token() {
+    if(type == eAtom) free((void*)data.s);
+  }
+
   static Token open() {
-    Token t = { eOpen, {0} };
-    return t;
+    return Token(eOpen);
   }
 
   static Token close() {
-    Token t = { eClose, {0} };
-    return t;
+    return Token(eClose);
   }
 
   static Token fin() {
-    Token t = { eFin, {0} };
-    return t;
+    return Token(eFin);
   }
 
   static Token number(int val) {
-    Token t = { eInt, { .i = val} };
-    return t;
+    return Token(val);
   }
 
   static Token atom(const char* val) {
-    Token t = { eAtom, { .s = val} };
-    return t;
+    return Token(val);
+  }
+
+  Token& operator=(const Token& o) {
+    if(o.type == eAtom) {
+      free((void*)data.s);
+    }
+
+    type = o.type;
+    data.i = o.data.i;
+
+    if(o.type == eAtom) {
+      data.s = strdup(data.s);
+    }
+
+    return *this;
   }
 
   void print() {
@@ -88,8 +131,16 @@ restart:
     return Token::number(val);
   }
 
-  if(c == '+') {
-    return Token::atom("+");
+  if(!isspace(c) && isprint(c)) {
+    std::ostringstream ss;
+
+    while(!isspace(c) && isprint(c) && c != '(' && c != ')') {
+      ss.put(c);
+      c = in.get();
+    }
+
+    in.putback(c);
+    return Token::atom(ss.str().c_str());
   }
 
   if(c == ' ' || c == '\t' || c == '\n') goto restart;
